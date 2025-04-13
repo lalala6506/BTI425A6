@@ -4,8 +4,15 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 dotenv.config();
 const userService = require("./user-service.js");
+const jwt = require('jsonwebtoken');
+const passport = require("passport");
+const passportJWT = require('passport-jwt');
 
 const HTTP_PORT = process.env.PORT || 8080;
+
+// JSON Web Token Setup
+let ExtractJwt = passportJWT.ExtractJwt;
+let JwtStrategy = passportJWT.Strategy;
 
 // Configure its options
 let jwtOptions = {
@@ -24,7 +31,7 @@ let strategy = new JwtStrategy(jwtOptions, function (jwt_payload, next) {
   
       if (jwt_payload) {
           // The following will ensure that all routes using 
-          // passport.authenticate have a req.user._id, req.user.userName, req.user.fullName & req.user.role values 
+          // passport.authenticate have a req.user._id, req.user.userName 
           // that matches the request payload data
           next(null, { _id: jwt_payload._id,
             userName: jwt_payload.userName
@@ -67,11 +74,12 @@ app.post("/api/login", (req, res) => {
 
             res.json({ "message": "login successful", "token": token });
         }).catch((msg) => {
+            console.error('Login error:', msg);
             res.status(422).json({ "message": msg });
         });
 });
 
-app.get("/api/user/favourites", (req, res) => {
+app.get("/api/user/favourites", passport.authenticate('jwt', { session: false }), (req, res) => {
     userService.getFavourites(req.user._id)
     .then(data => {
         res.json(data);
@@ -81,7 +89,7 @@ app.get("/api/user/favourites", (req, res) => {
 
 });
 
-app.put("/api/user/favourites/:id", (req, res) => {
+app.put("/api/user/favourites/:id", passport.authenticate('jwt', { session: false }),(req, res) => {
     userService.addFavourite(req.user._id, req.params.id)
     .then(data => {
         res.json(data)
@@ -90,7 +98,7 @@ app.put("/api/user/favourites/:id", (req, res) => {
     })
 });
 
-app.delete("/api/user/favourites/:id", (req, res) => {
+app.delete("/api/user/favourites/:id", passport.authenticate('jwt', { session: false }),(req, res) => {
     userService.removeFavourite(req.user._id, req.params.id)
     .then(data => {
         res.json(data)
@@ -99,7 +107,7 @@ app.delete("/api/user/favourites/:id", (req, res) => {
     })
 });
 
-app.get("/api/user/history", (req, res) => {
+app.get("/api/user/history", passport.authenticate('jwt', { session: false }),(req, res) => {
     userService.getHistory(req.user._id)
     .then(data => {
         res.json(data);
@@ -109,7 +117,7 @@ app.get("/api/user/history", (req, res) => {
 
 });
 
-app.put("/api/user/history/:id", (req, res) => {
+app.put("/api/user/history/:id", passport.authenticate('jwt', { session: false }),(req, res) => {
     userService.addHistory(req.user._id, req.params.id)
     .then(data => {
         res.json(data)
@@ -118,7 +126,7 @@ app.put("/api/user/history/:id", (req, res) => {
     })
 });
 
-app.delete("/api/user/history/:id", (req, res) => {
+app.delete("/api/user/history/:id", passport.authenticate('jwt', { session: false }),(req, res) => {
     userService.removeHistory(req.user._id, req.params.id)
     .then(data => {
         res.json(data)
